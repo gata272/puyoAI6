@@ -31,11 +31,12 @@ jobs:
       - name: Check Emscripten
         run: emcc --version
 
-      - name: Benchmark ZIP JavaScript regression test
+      - name: Benchmark ZIP and human-log JavaScript regression tests
         run: |
           node --version
           node tests/test_benchmark_zip.mjs
           node tests/test_benchmark_export_path.mjs
+          node tests/test_human_log_module.mjs
 
       - name: Native smoke test
         run: |
@@ -180,6 +181,7 @@ jobs:
             ai/evaluation/route_recovery.cpp \
             ai/search/move_generator.cpp \
             ai/simulation/board.cpp \
+            ai/simulation/board.cpp \
             ai/simulation/simulator.cpp \
             -I. \
             -o survival_horizon_test
@@ -321,6 +323,7 @@ jobs:
           test -f _site/benchmark-zip.js
           test -f _site/benchmark-export-worker.js
           test -f _site/debug-mode.js
+          test -f _site/human-log.js
 
           if grep -R --line-number --fixed-strings 'benchmark-export.html' _site >/tmp/benchmark_export_refs.txt; then
             echo 'ERROR: stale benchmark-export.html reference remains in Pages artifact:'
