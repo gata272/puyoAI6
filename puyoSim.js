@@ -363,13 +363,13 @@ function applyPendingOjamaToBoard() {
     updateUI();
 
     if (!ok) {
-        triggerGameOver();
+        triggerGameOver('ojama_drop_failed');
         return false;
     }
     return true;
 }
 
-function triggerGameOver() {
+function triggerGameOver(reason = 'board') {
     if (gameState === 'gameover') return;
 
     gameState = 'gameover';
@@ -378,6 +378,10 @@ function triggerGameOver() {
 
     updateUI();
     renderBoard();
+
+    if (typeof window.humanLogGameOver === 'function') {
+        window.humanLogGameOver(reason);
+    }
 
     // ゲームオーバー状態も履歴に保存
     saveState(true);
@@ -737,6 +741,9 @@ window.undoMove = function() {
     redoStack.push(currentState);
     const previousState = historyStack[historyStack.length - 1];
     restoreState(previousState);
+    if (typeof window.humanLogRecordEvent === 'function') {
+        window.humanLogRecordEvent('undo', { restoredTurnState: previousState.turn ?? null });
+    }
     updateHistoryButtons();
 };
 
@@ -749,6 +756,9 @@ window.redoMove = function() {
     const nextState = redoStack.pop();
     historyStack.push(nextState);
     restoreState(nextState);
+    if (typeof window.humanLogRecordEvent === 'function') {
+        window.humanLogRecordEvent('redo', { restoredTurnState: nextState.turn ?? null });
+    }
     updateHistoryButtons();
 };
 
@@ -911,13 +921,14 @@ function initializeGame() {
         const btnHardDrop = document.getElementById('btn-hard-drop');
         const btnSoftDrop = document.getElementById('btn-soft-drop');
 
-        if (btnLeft) btnLeft.addEventListener('click', () => movePuyo(-1, 0));
-        if (btnRight) btnRight.addEventListener('click', () => movePuyo(1, 0));
-        if (btnRotateCW) btnRotateCW.addEventListener('click', window.rotatePuyoCW);
-        if (btnRotateCCW) btnRotateCCW.addEventListener('click', window.rotatePuyoCCW);
-        if (btnHardDrop) btnHardDrop.addEventListener('click', hardDrop);
+        if (btnLeft) btnLeft.addEventListener('click', () => { if (typeof window.humanLogRecordControl === 'function') window.humanLogRecordControl('left'); movePuyo(-1, 0); });
+        if (btnRight) btnRight.addEventListener('click', () => { if (typeof window.humanLogRecordControl === 'function') window.humanLogRecordControl('right'); movePuyo(1, 0); });
+        if (btnRotateCW) btnRotateCW.addEventListener('click', () => { if (typeof window.humanLogRecordControl === 'function') window.humanLogRecordControl('rotateCW'); window.rotatePuyoCW(); });
+        if (btnRotateCCW) btnRotateCCW.addEventListener('click', () => { if (typeof window.humanLogRecordControl === 'function') window.humanLogRecordControl('rotateCCW'); window.rotatePuyoCCW(); });
+        if (btnHardDrop) btnHardDrop.addEventListener('click', () => { if (typeof window.humanLogRecordControl === 'function') window.humanLogRecordControl('hardDrop'); hardDrop(); });
         if (btnSoftDrop) btnSoftDrop.addEventListener('click', () => {
             if (gameState === 'playing') {
+                if (typeof window.humanLogRecordControl === 'function') window.humanLogRecordControl('softDrop');
                 clearInterval(dropTimer);
                 movePuyo(0, -1);
                 if (autoDropEnabled) startPuyoDropLoop();
@@ -936,6 +947,10 @@ function initializeGame() {
     if (!_initializedOnce) {
         saveState(false);
         _initializedOnce = true;
+    }
+
+    if (typeof window.humanLogOnGameInitialized === 'function') {
+        window.humanLogOnGameInitialized();
     }
 }
 
@@ -966,8 +981,12 @@ function generateNewPuyo() {
     );
 
     if (checkCollision(startingCoords) || isOverlappingTarget) {
-        triggerGameOver();
+        triggerGameOver('spawn_collision');
         return;
+    }
+
+    if (typeof window.humanLogObserveSpawn === 'function') {
+        window.humanLogObserveSpawn();
     }
 }
 
@@ -1150,6 +1169,20 @@ function lockPuyo() {
     if (gameState !== 'playing' || !currentPuyo) return;
     debugRecordTurn();
     const coords = getPuyoCoords();
+
+    if (typeof window.humanLogBeginTurn === 'function') {
+        window.humanLogBeginTurn({
+            boardBefore: copyBoard(board),
+            currentPuyo: { ...currentPuyo },
+            cells: coords,
+            upcomingPairs: typeof window.getUpcomingPairs === 'function'
+                ? window.getUpcomingPairs(5)
+                : [],
+            queueIndexBeforeLock: queueIndex,
+            scoreBefore: score,
+            pendingOjamaBefore: pendingOjama
+        });
+    }
     coords.forEach(p => {
         if (p.y >= 0 && p.y < HEIGHT && p.x >= 0 && p.x < WIDTH) {
             board[p.y][p.x] = p.color;
@@ -1162,6 +1195,10 @@ function lockPuyo() {
 
     for (let x = 0; x < WIDTH; x++) {
         board[HEIGHT - 1][x] = COLORS.EMPTY;
+    }
+
+    if (typeof window.humanLogRecordPlacedBoard === 'function') {
+        window.humanLogRecordPlacedBoard(copyBoard(board));
     }
 
     renderBoard();
@@ -1273,7 +1310,8 @@ async function runChain() {
 
     if (groups.length === 0) {
         debugRecordChainEpisode(chainCount);
-        if (checkBoardEmpty()) {
+        const allClear = checkBoardEmpty();
+        if (allClear) {
             score += ALL_CLEAR_SCORE_BONUS;
             chainAttackScoreBuffer += ALL_CLEAR_SCORE_BONUS;
             updateUI();
@@ -1283,7 +1321,7 @@ async function runChain() {
         const checkX = 2;
         const isGameOver = board[gameOverLineY][checkX] !== COLORS.EMPTY;
         if (isGameOver) {
-            triggerGameOver();
+            triggerGameOver('danger_line');
             return;
         }
 
@@ -1291,6 +1329,17 @@ async function runChain() {
 
         if (!applyPendingOjamaToBoard()) {
             return;
+        }
+
+        if (typeof window.humanLogFinishTurn === 'function') {
+            await window.humanLogFinishTurn({
+                boardAfter: copyBoard(board),
+                scoreAfter: score,
+                chainCount,
+                pendingOjamaAfter: pendingOjama,
+                allClear,
+                gameOver: false
+            });
         }
 
         gameState = 'playing';
@@ -1325,7 +1374,7 @@ async function runChain() {
         });
     });
 
-    clearGarbagePuyos(erasedCoords);
+    const garbageCleared = clearGarbagePuyos(erasedCoords);
     renderBoard();
     updateUI();
 
@@ -1335,15 +1384,37 @@ async function runChain() {
     gravity();
     renderBoard();
 
+    if (typeof window.humanLogRecordWave === 'function') {
+        window.humanLogRecordWave({
+            chain: chainCount,
+            erasedPuyos: erasedCoords.length,
+            garbageCleared,
+            scoreDelta: chainScore,
+            board: copyBoard(board)
+        });
+    }
+
     const nextGroups = findConnectedPuyos();
     if (nextGroups.length === 0) {
         debugRecordChainEpisode(chainCount);
+        const allClear = checkBoardEmpty();
         gameState = 'playing';
 
         flushChainOjamaBuffer();
 
         if (!applyPendingOjamaToBoard()) {
             return;
+        }
+
+        if (typeof window.humanLogFinishTurn === 'function') {
+            await window.humanLogFinishTurn({
+                boardAfter: copyBoard(board),
+                scoreAfter: score,
+                chainCount,
+                pendingOjamaAfter: pendingOjama,
+                allClear,
+                gameOver: false
+            });
         }
 
         if (!currentPuyo) {
@@ -1393,26 +1464,32 @@ function handleInput(event) {
     if (gameState !== 'playing') return;
     switch (event.key) {
         case 'ArrowLeft':
+            if (typeof window.humanLogRecordControl === 'function') window.humanLogRecordControl('left');
             movePuyo(-1, 0);
             break;
         case 'ArrowRight':
+            if (typeof window.humanLogRecordControl === 'function') window.humanLogRecordControl('right');
             movePuyo(1, 0);
             break;
         case 'z':
         case 'Z':
+            if (typeof window.humanLogRecordControl === 'function') window.humanLogRecordControl('rotateCW');
             window.rotatePuyoCW();
             break;
         case 'x':
         case 'X':
+            if (typeof window.humanLogRecordControl === 'function') window.humanLogRecordControl('rotateCCW');
             window.rotatePuyoCCW();
             break;
         case 'ArrowDown':
+            if (typeof window.humanLogRecordControl === 'function') window.humanLogRecordControl('softDrop');
             clearInterval(dropTimer);
             movePuyo(0, -1);
             if (autoDropEnabled) startPuyoDropLoop();
             break;
         case ' ':
             event.preventDefault();
+            if (typeof window.humanLogRecordControl === 'function') window.humanLogRecordControl('hardDrop');
             hardDrop();
             break;
     }
@@ -1665,6 +1742,14 @@ window.setNextQueue = function(newQueue) {
 
 window.getPendingOjama = function() {
     return pendingOjama;
+};
+
+window.getHumanLogGameSettings = function() {
+    return {
+        autoDropEnabled: !!autoDropEnabled,
+        gravityWaitTime: Number(gravityWaitTime) || 0,
+        chainWaitTime: Number(chainWaitTime) || 0
+    };
 };
 
 window.applyPendingOjamaToBoard = applyPendingOjamaToBoard;

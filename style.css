@@ -515,6 +515,29 @@ body.board-gameover #puyo-board .puyo::after {
     opacity: 0.85;
     pointer-events: none;
 }
+/* --- Human play log UI --- */
+.human-log-panel {
+    margin-top: 16px;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 6px;
+    background: rgba(42,157,143,0.08);
+    text-align: left;
+}
+.human-log-panel h3 { margin: 0 0 8px; font-size: 1em; }
+.human-log-toggle { display: flex; align-items: center; gap: 8px; font-size: 0.82em; color: #ddd; }
+.human-log-note { margin: 8px 0; color: #999; font-size: 0.69em; line-height: 1.45; }
+.human-log-status,
+.human-log-export-status { min-height: 1.2em; color: #aaa; font-size: 0.7em; }
+.human-log-actions { display: flex; gap: 6px; margin-top: 8px; }
+.human-log-actions button {
+    flex: 1; padding: 7px 5px; border: 0; border-radius: 5px;
+    background: #2a9d8f; color: #fff; font-size: 0.72em; cursor: pointer;
+}
+.human-log-actions button:last-child { background: #7f8c8d; }
+.human-log-actions button:disabled { opacity: 0.5; cursor: wait; }
+.human-log-export-status { margin-top: 6px; }
+
 /* --- Debug / benchmark UI --- */
 #debug-panel[hidden] { display: none !important; }
 #debug-panel {

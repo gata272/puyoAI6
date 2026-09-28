@@ -1,4 +1,4 @@
-const CACHE_NAME = 'puyo-sim-v12-inline-benchmark-export-dedicated-worker';
+const CACHE_NAME = 'puyo-sim-v13-human-play-log';
 
 const urlsToCache = [
     './',
@@ -7,6 +7,7 @@ const urlsToCache = [
     './online.css',
     './online.js',
     './puyoSim.js',
+    './human-log.js',
     './puyoAI.js',
     './debug-mode.js',
     './puyo-ai-worker-wasm.js',

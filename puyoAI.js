@@ -343,6 +343,10 @@
 
     global.resetAIState = resetAI;
 
+    global.isPuyoAIAutoEnabled = function () {
+        return !!STATE.autoEnabled;
+    };
+
     // resetGame() is defined by puyoSim.js. Wrap it once so the AI's
     // GTR turn counter always starts from zero after a game reset.
     const originalResetGame = global.resetGame;

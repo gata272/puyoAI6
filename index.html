@@ -54,6 +54,23 @@
                 <p style="font-size: 0.72em; color: #999; line-height: 1.45; margin: 8px 0 0;">深さ・Beam幅を大きくすると探索量が増え、AIの思考時間も長くなります。</p>
             </div>
 
+            <div id="human-log-panel" class="human-log-panel">
+                <h3>人間プレイログ</h3>
+                <label class="human-log-toggle">
+                    <input type="checkbox" id="human-log-checkbox" onchange="toggleHumanLog()">
+                    人間プレイを詳細記録する
+                </label>
+                <p class="human-log-note">
+                    ONにすると、各手の盤面・現在ぷよ・NEXT・配置位置/回転・連鎖内容・消去数・思考時間・操作回数を保存します。AI自動プレイ中の手は記録しません。
+                </p>
+                <div id="human-log-status" class="human-log-status">ログ機能を準備中…</div>
+                <div class="human-log-actions">
+                    <button type="button" id="human-log-export-button" onclick="exportHumanLogs()">人間ログをZIP保存</button>
+                    <button type="button" id="human-log-clear-button" onclick="clearHumanLogs()">保存済みログを削除</button>
+                </div>
+                <div id="human-log-export-status" class="human-log-export-status"></div>
+            </div>
+
             <div class="debug-mode-row">
                 <input type="checkbox" id="debug-mode-checkbox" onchange="toggleDebugMode()">
                 <label for="debug-mode-checkbox">デバッグモード</label>
@@ -223,6 +240,7 @@
     <p class="small-text">PuyoSim + PuyoAI (GTR + Beam Search)</p>
 
     <script src="./puyoSim.js"></script>
+    <script src="./human-log.js"></script>
     <script src="./puyoAI.js"></script>
     <script src="./debug-mode.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
