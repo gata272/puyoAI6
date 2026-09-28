@@ -30,7 +30,8 @@ assert.ok(!benchmarkWorker.includes("msg.type === 'exportZip'"));
 
 assert.ok(sw.includes('benchmark-export-worker.js'));
 assert.ok(sw.includes('benchmark-zip.js'));
-assert.ok(sw.includes('puyo-sim-v12-inline-benchmark-export-dedicated-worker'));
+assert.ok(sw.includes('puyo-sim-v13-human-play-log'));
+assert.ok(sw.includes('./human-log.js'));
 assert.ok(!sw.includes('benchmark-export.html'));
 assert.ok(!sw.includes('benchmark-export.js'));
 
